@@ -1,0 +1,28 @@
+[package]
+name = "range-requests"
+description = "Various utilities to deal with `Range Requests`"
+categories = ["web-programming", "network-programming"]
+keywords = ["range-requests", "range", "content-range", "http"]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/M4SS-Code/range-requests"
+rust-version = "1.88"
+
+
+[package.metadata.docs.rs]
+features = [
+    "axum"
+]
+rustdoc-args = ["--cfg", "docsrs"]
+
+
+[dependencies]
+axum-core = { version = "0.5", optional = true }
+bytes = "1"
+http = "1"
+thiserror = "2"
+
+[features]
+default = []
+axum = ["dep:axum-core"]

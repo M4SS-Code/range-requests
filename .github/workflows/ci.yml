@@ -1,0 +1,87 @@
+name: CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  fmt:
+    name: rustfmt / 1.91.0
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@1.91.0
+        with:
+          components: rustfmt
+
+      - name: Rust rustfmt
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy / 1.91.0
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@1.91.0
+        with:
+          components: clippy
+
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings
+
+  cargo-hack:
+    name: cargo-hack / 1.91.0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@1.91.0
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack@0.6.39
+
+      - name: Run cargo-hack
+        run: cargo hack check --feature-powerset --no-dev-deps
+
+  test:
+    name: test / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - name: stable
+            rust: stable
+          - name: beta
+            rust: beta
+          - name: nightly
+            rust: nightly
+          - name: 1.88.0
+            rust: 1.88.0
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Run tests (--features axum)
+        run: cargo test --features axum
