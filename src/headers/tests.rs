@@ -59,6 +59,14 @@ mod content_range {
     }
 
     #[test]
+    fn succesful_sized_bound_to_string() {
+        assert_eq!(
+            "bytes 10-20/50",
+            &HttpContentRange::Bound(Bound::new(10..=20, Some(50)).unwrap()).to_string()
+        );
+    }
+
+    #[test]
     fn succesful_unsized_bound_parsing() {
         assert_eq!(
             "bytes 10-20/*".parse::<HttpContentRange>().unwrap(),
@@ -67,10 +75,26 @@ mod content_range {
     }
 
     #[test]
+    fn succesful_unsized_bound_to_string() {
+        assert_eq!(
+            "bytes 10-20/*",
+            &HttpContentRange::Bound(Bound::new(10..=20, None).unwrap()).to_string()
+        );
+    }
+
+    #[test]
     fn succesful_unsatisfiable_parsing() {
         assert_eq!(
             "bytes */50".parse::<HttpContentRange>().unwrap(),
             HttpContentRange::Unsatisfiable(Unsatisfiable::new(50))
+        );
+    }
+
+    #[test]
+    fn succesful_unsatisfiable_to_string() {
+        assert_eq!(
+            "bytes */50",
+            &HttpContentRange::Unsatisfiable(Unsatisfiable::new(50)).to_string()
         );
     }
 
@@ -144,10 +168,23 @@ mod range {
     }
 
     #[test]
+    fn succesful_starting_to_string() {
+        assert_eq!("bytes=50-", &HttpRange::StartingPoint(50).to_string());
+    }
+
+    #[test]
     fn succesful_range_parsing() {
         assert_eq!(
             "bytes=50-100".parse::<HttpRange>().unwrap(),
             HttpRange::Range(OrderedRange::new(50..=100).unwrap())
+        );
+    }
+
+    #[test]
+    fn succesful_range_to_string() {
+        assert_eq!(
+            "bytes=50-100",
+            &HttpRange::Range(OrderedRange::new(50..=100).unwrap()).to_string()
         );
     }
 
@@ -157,5 +194,10 @@ mod range {
             "bytes=-100".parse::<HttpRange>().unwrap(),
             HttpRange::Suffix(100)
         );
+    }
+
+    #[test]
+    fn succesful_suffix_to_string() {
+        assert_eq!("bytes=-100", &HttpRange::Suffix(100).to_string());
     }
 }
