@@ -86,10 +86,15 @@ impl FromStr for HttpContentRange {
             (ParsedRange::Range(range), ParsedSize::Star) => {
                 Ok(Self::Bound(Bound { range, size: None }))
             }
-            (ParsedRange::Range(range), ParsedSize::Value(size)) => Ok(Self::Bound(Bound {
-                range,
-                size: Some(size),
-            })),
+            (ParsedRange::Range(range), ParsedSize::Value(size)) if range.end() < size => {
+                Ok(Self::Bound(Bound {
+                    range,
+                    size: Some(size),
+                }))
+            }
+            (ParsedRange::Range(_), ParsedSize::Value(_)) => {
+                Err(ParseHttpRangeOrContentRangeError::MalformedRange)
+            }
         }
     }
 }
