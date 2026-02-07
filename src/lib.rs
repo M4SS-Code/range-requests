@@ -78,7 +78,7 @@ pub fn file_range(
                 range: start..=end,
             })
         }
-        HttpRange::Suffix(suffix) if size.checked_sub(suffix).is_some() => {
+        HttpRange::Suffix(suffix) if size.checked_sub(suffix).is_some_and(|start| start < size) => {
             let start = size - suffix;
             let end = size - 1;
             let content_range =
