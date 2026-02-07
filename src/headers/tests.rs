@@ -2,12 +2,12 @@
 use crate::headers::OrderedRange;
 
 #[test]
-fn succesful_ordered_range() {
+fn successful_ordered_range() {
     assert!(OrderedRange::new(10..=11).is_ok())
 }
 
 #[test]
-fn unsuccesful_ordered_range() {
+fn unsuccessful_ordered_range() {
     assert!(OrderedRange::new(11..=10).is_err())
 }
 
@@ -19,13 +19,13 @@ mod content_range {
     };
 
     #[test]
-    fn succesful_bound() {
+    fn successful_bound() {
         assert!(Bound::new(10..=20, Some(50)).is_ok());
         assert!(Bound::new(10..=20, None).is_ok());
     }
 
     #[test]
-    fn unsuccesful_bound() {
+    fn unsuccessful_bound() {
         assert_eq!(
             Bound::new(11..=10, None),
             Err(InvalidBound::InvalidRange(InvalidOrderedRange {
@@ -51,7 +51,7 @@ mod content_range {
     }
 
     #[test]
-    fn succesful_sized_bound_parsing() {
+    fn successful_sized_bound_parsing() {
         assert_eq!(
             "bytes 10-20/50".parse::<HttpContentRange>().unwrap(),
             HttpContentRange::Bound(Bound::new(10..=20, Some(50)).unwrap())
@@ -59,7 +59,7 @@ mod content_range {
     }
 
     #[test]
-    fn succesful_sized_bound_to_string() {
+    fn successful_sized_bound_to_string() {
         assert_eq!(
             "bytes 10-20/50",
             &HttpContentRange::Bound(Bound::new(10..=20, Some(50)).unwrap()).to_string()
@@ -67,7 +67,7 @@ mod content_range {
     }
 
     #[test]
-    fn succesful_unsized_bound_parsing() {
+    fn successful_unsized_bound_parsing() {
         assert_eq!(
             "bytes 10-20/*".parse::<HttpContentRange>().unwrap(),
             HttpContentRange::Bound(Bound::new(10..=20, None).unwrap())
@@ -75,7 +75,7 @@ mod content_range {
     }
 
     #[test]
-    fn succesful_unsized_bound_to_string() {
+    fn successful_unsized_bound_to_string() {
         assert_eq!(
             "bytes 10-20/*",
             &HttpContentRange::Bound(Bound::new(10..=20, None).unwrap()).to_string()
@@ -83,7 +83,7 @@ mod content_range {
     }
 
     #[test]
-    fn succesful_unsatisfiable_parsing() {
+    fn successful_unsatisfiable_parsing() {
         assert_eq!(
             "bytes */50".parse::<HttpContentRange>().unwrap(),
             HttpContentRange::Unsatisfiable(Unsatisfiable::new(50))
@@ -91,7 +91,7 @@ mod content_range {
     }
 
     #[test]
-    fn succesful_unsatisfiable_to_string() {
+    fn successful_unsatisfiable_to_string() {
         assert_eq!(
             "bytes */50",
             &HttpContentRange::Unsatisfiable(Unsatisfiable::new(50)).to_string()
@@ -106,7 +106,7 @@ mod content_range {
         };
 
         #[test]
-        fn sucessful_range_range_range_content_bound() {
+        fn successful_range_range_range_content_bound() {
             let range = HttpRange::Range(OrderedRange::new(10..=20).unwrap());
             let content_range = HttpContentRange::Bound(Bound::new(10..=20, Some(50)).unwrap());
 
@@ -114,7 +114,7 @@ mod content_range {
         }
 
         #[test]
-        fn unsucessful_range_range_range_content_bound() {
+        fn unsuccessful_range_range_range_content_bound() {
             let range = HttpRange::Range(OrderedRange::new(10..=50).unwrap());
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
 
@@ -122,7 +122,7 @@ mod content_range {
         }
 
         #[test]
-        fn sucessful_range_starting_point_range_content_bound() {
+        fn successful_range_starting_point_range_content_bound() {
             let range = HttpRange::StartingPoint(10);
             let content_range = HttpContentRange::Bound(Bound::new(10..=49, Some(50)).unwrap());
 
@@ -130,7 +130,7 @@ mod content_range {
         }
 
         #[test]
-        fn unsucessful_range_starting_point_range_content_bound() {
+        fn unsuccessful_range_starting_point_range_content_bound() {
             let range = HttpRange::StartingPoint(21);
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
 
@@ -138,7 +138,7 @@ mod content_range {
         }
 
         #[test]
-        fn sucessful_range_suffix_range_content_bound() {
+        fn successful_range_suffix_range_content_bound() {
             let range = HttpRange::Suffix(20);
             let content_range = HttpContentRange::Bound(Bound::new(0..=19, Some(20)).unwrap());
 
@@ -146,7 +146,7 @@ mod content_range {
         }
 
         #[test]
-        fn unsucessful_range_suffix_range_content_bound() {
+        fn unsuccessful_range_suffix_range_content_bound() {
             let range = HttpRange::Suffix(50);
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
 
@@ -160,7 +160,7 @@ mod range {
     use crate::headers::{OrderedRange, ParseHttpRangeOrContentRangeError, range::HttpRange};
 
     #[test]
-    fn succesful_starting_parsing() {
+    fn successful_starting_parsing() {
         assert_eq!(
             "bytes=50-".parse::<HttpRange>().unwrap(),
             HttpRange::StartingPoint(50)
@@ -168,12 +168,12 @@ mod range {
     }
 
     #[test]
-    fn succesful_starting_to_string() {
+    fn successful_starting_to_string() {
         assert_eq!("bytes=50-", &HttpRange::StartingPoint(50).to_string());
     }
 
     #[test]
-    fn succesful_range_parsing() {
+    fn successful_range_parsing() {
         assert_eq!(
             "bytes=50-100".parse::<HttpRange>().unwrap(),
             HttpRange::Range(OrderedRange::new(50..=100).unwrap())
@@ -181,7 +181,7 @@ mod range {
     }
 
     #[test]
-    fn succesful_range_to_string() {
+    fn successful_range_to_string() {
         assert_eq!(
             "bytes=50-100",
             &HttpRange::Range(OrderedRange::new(50..=100).unwrap()).to_string()
@@ -189,7 +189,7 @@ mod range {
     }
 
     #[test]
-    fn succesful_suffix_parsing() {
+    fn successful_suffix_parsing() {
         assert_eq!(
             "bytes=-100".parse::<HttpRange>().unwrap(),
             HttpRange::Suffix(100)
@@ -197,7 +197,7 @@ mod range {
     }
 
     #[test]
-    fn succesful_suffix_to_string() {
+    fn successful_suffix_to_string() {
         assert_eq!("bytes=-100", &HttpRange::Suffix(100).to_string());
     }
 
