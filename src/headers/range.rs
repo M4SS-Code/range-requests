@@ -46,16 +46,14 @@ impl FromStr for HttpRange {
                 Ok(Self::Range(range))
             }
             (false, true) => {
-                let start = start_str
-                    .parse()
-                    .map_err(|_| ParseHttpRangeOrContentRangeError::MalformedRange)?;
+                let start = u64_unprefixed_parse(start_str)
+                    .map_err(ParseHttpRangeOrContentRangeError::InvalidRangePiece)?;
 
                 Ok(Self::StartingPoint(start))
             }
             (true, false) => {
-                let suffix = end_str
-                    .parse()
-                    .map_err(|_| ParseHttpRangeOrContentRangeError::MalformedRange)?;
+                let suffix = u64_unprefixed_parse(end_str)
+                    .map_err(ParseHttpRangeOrContentRangeError::InvalidRangePiece)?;
 
                 Ok(Self::Suffix(suffix))
             }
