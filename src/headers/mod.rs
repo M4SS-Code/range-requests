@@ -51,7 +51,7 @@ pub enum InvalidHttpU64 {
     InvalidInt(#[from] ParseIntError),
 }
 
-/// An error that may occur when creating an [`OrderedRange`] with `start` < `end`.
+/// An error that may occur when creating an [`OrderedRange`] with `start` > `end`.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("The provided `start`: {start} is greater than `end`: {end}")]
 pub struct InvalidOrderedRange {
