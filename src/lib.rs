@@ -47,56 +47,28 @@ pub fn file_range(
     let size = size.get();
 
     let Some(http_range) = http_range else {
-        let end = size - 1;
         return Ok(ContentRange {
             header: None,
-            range: 0..=end,
+            range: 0..=size - 1,
         });
     };
 
-    match http_range {
-        HttpRange::StartingPoint(start) if size > start => {
-            let end = size - 1;
-
-            let content_range =
-                HttpContentRange::Bound(Bound::new(start..=end, Some(size)).unwrap());
-
-            Ok(ContentRange {
-                header: Some(content_range),
-                range: start..=end,
-            })
-        }
-        HttpRange::Range(ordered_range) if size > ordered_range.end() => {
-            let start = ordered_range.start();
-            let end = ordered_range.end();
-
-            let content_range =
-                HttpContentRange::Bound(Bound::new(start..=end, Some(size)).unwrap());
-
-            Ok(ContentRange {
-                header: Some(content_range),
-                range: start..=end,
-            })
-        }
-        HttpRange::Suffix(suffix) if size.checked_sub(suffix).is_some_and(|start| start < size) => {
-            let start = size - suffix;
-            let end = size - 1;
-            let content_range =
-                HttpContentRange::Bound(Bound::new(start..=end, Some(size)).unwrap());
-
-            Ok(ContentRange {
-                header: Some(content_range),
-                range: start..=end,
-            })
-        }
+    let range = match http_range {
+        HttpRange::StartingPoint(start) if start < size => start..=size - 1,
+        HttpRange::Range(range) if range.end() < size => range.start()..=range.end(),
+        HttpRange::Suffix(suffix) if suffix > 0 && suffix <= size => size - suffix..=size - 1,
         _ => {
-            let content_range = HttpContentRange::Unsatisfiable(
-                crate::headers::content_range::Unsatisfiable::new(size),
-            );
-
-            Err(UnsatisfiableRange(content_range))
+            let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(size));
+            return Err(UnsatisfiableRange(content_range));
         }
-    }
+    };
+
+    let content_range = HttpContentRange::Bound(Bound::new(range.clone(), Some(size)).unwrap());
+
+    Ok(ContentRange {
+        header: Some(content_range),
+        range,
+    })
 }
 
 /// A container for the payload slice and the optional `Content-Range` header.
