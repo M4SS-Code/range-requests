@@ -196,9 +196,8 @@ impl FromStr for ParsedSize {
 
 impl From<&HttpContentRange> for HeaderValue {
     fn from(value: &HttpContentRange) -> Self {
-        HeaderValue::from_maybe_shared(value.to_string()).expect(
-            "The `HttpContentRange` Display implementation produces nonvisible ASCII characters",
-        )
+        HeaderValue::from_maybe_shared(value.to_string())
+            .expect("`HttpContentRange` Display produced non-visible ASCII characters")
     }
 }
 

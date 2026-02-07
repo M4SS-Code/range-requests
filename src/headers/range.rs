@@ -67,7 +67,7 @@ impl FromStr for HttpRange {
 impl From<&HttpRange> for HeaderValue {
     fn from(value: &HttpRange) -> Self {
         HeaderValue::from_maybe_shared(value.to_string())
-            .expect("The `HttpRange` Display implementation produces nonvisible ASCII characters")
+            .expect("`HttpRange` Display produced non-visible ASCII characters")
     }
 }
 
