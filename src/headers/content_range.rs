@@ -31,8 +31,10 @@ impl HttpContentRange {
                 HttpRange::Range(OrderedRange { start, end }),
                 HttpContentRange::Bound(Bound { range, .. }),
             ) => start == range.start() && end == range.end(),
-            (HttpRange::Suffix(suffix), HttpContentRange::Bound(Bound { range, .. })) => {
-                (range.end() - range.start()).checked_add(1) == Some(suffix)
+            (HttpRange::Suffix(suffix), HttpContentRange::Bound(Bound { range, size })) => {
+                let length_matches = (range.end() - range.start()).checked_add(1) == Some(suffix);
+                let ends_at_boundary = size.is_none_or(|size| range.end() + 1 == size);
+                length_matches && ends_at_boundary
             }
             (
                 HttpRange::StartingPoint(n),
