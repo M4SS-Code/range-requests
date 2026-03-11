@@ -480,9 +480,9 @@ mod file_range {
     }
 
     #[test]
-    fn suffix_exceeds_size() {
-        let result = file_range(size(10), Some(HttpRange::Suffix(11)));
-        assert!(result.is_err());
+    fn suffix_exceeds_size_is_clamped() {
+        let result = file_range(size(10), Some(HttpRange::Suffix(11))).unwrap();
+        assert_eq!(result.range(), &(0..=9));
     }
 
     #[test]
