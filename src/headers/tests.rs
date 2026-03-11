@@ -146,11 +146,19 @@ mod content_range {
         }
 
         #[test]
-        fn unsuccessful_range_suffix_range_content_bound() {
-            let range = HttpRange::Suffix(50);
+        fn unsuccessful_range_suffix_zero_content_unsatisfiable() {
+            let range = HttpRange::Suffix(0);
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
 
             assert!(content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn suffix_exceeding_size_is_not_unsatisfiable() {
+            let range = HttpRange::Suffix(50);
+            let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
+
+            assert!(!content_range.matches_requested_range(range));
         }
     }
 }

@@ -44,10 +44,9 @@ impl HttpContentRange {
                 HttpRange::Range(OrderedRange { end: n, .. }),
                 HttpContentRange::Unsatisfiable(Unsatisfiable { size }),
             ) => n >= *size,
-            (
-                HttpRange::Suffix(suffix),
-                HttpContentRange::Unsatisfiable(Unsatisfiable { size }),
-            ) => suffix > *size,
+            (HttpRange::Suffix(suffix), HttpContentRange::Unsatisfiable(Unsatisfiable { .. })) => {
+                suffix == 0
+            }
         }
     }
 }
