@@ -160,6 +160,38 @@ mod content_range {
 
             assert!(!content_range.matches_requested_range(range));
         }
+
+        #[test]
+        fn range_with_clamped_end_matches() {
+            let range = HttpRange::Range(OrderedRange::new(0..=999).unwrap());
+            let content_range = HttpContentRange::Bound(Bound::new(0..=49, Some(50)).unwrap());
+
+            assert!(content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn suffix_clamped_to_file_size_matches() {
+            let range = HttpRange::Suffix(999);
+            let content_range = HttpContentRange::Bound(Bound::new(0..=49, Some(50)).unwrap());
+
+            assert!(content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn suffix_not_at_boundary_does_not_match() {
+            let range = HttpRange::Suffix(5);
+            let content_range = HttpContentRange::Bound(Bound::new(0..=4, Some(20)).unwrap());
+
+            assert!(!content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn suffix_length_mismatch_does_not_match() {
+            let range = HttpRange::Suffix(3);
+            let content_range = HttpContentRange::Bound(Bound::new(10..=19, Some(20)).unwrap());
+
+            assert!(!content_range.matches_requested_range(range));
+        }
     }
 }
 
