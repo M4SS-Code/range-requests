@@ -55,7 +55,9 @@ pub fn file_range(
 
     let range = match http_range {
         HttpRange::StartingPoint(start) if start < size => start..=size - 1,
-        HttpRange::Range(range) if range.end() < size => range.start()..=range.end(),
+        HttpRange::Range(range) if range.start() < size => {
+            range.start()..=range.end().min(size - 1)
+        }
         HttpRange::Suffix(suffix) if suffix > 0 && suffix <= size => size - suffix..=size - 1,
         _ => {
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(size));
