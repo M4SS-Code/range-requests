@@ -428,15 +428,29 @@ mod file_range {
     }
 
     #[test]
-    fn range_end_at_size() {
+    fn range_end_at_size_is_clamped() {
         let range = HttpRange::Range(OrderedRange::new(0..=10).unwrap());
+        let result = file_range(size(10), Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..=9));
+    }
+
+    #[test]
+    fn range_beyond_size_is_clamped() {
+        let range = HttpRange::Range(OrderedRange::new(0..=50).unwrap());
+        let result = file_range(size(10), Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..=9));
+    }
+
+    #[test]
+    fn range_start_at_size_is_unsatisfiable() {
+        let range = HttpRange::Range(OrderedRange::new(10..=20).unwrap());
         let result = file_range(size(10), Some(range));
         assert!(result.is_err());
     }
 
     #[test]
-    fn range_beyond_size() {
-        let range = HttpRange::Range(OrderedRange::new(0..=50).unwrap());
+    fn range_start_beyond_size_is_unsatisfiable() {
+        let range = HttpRange::Range(OrderedRange::new(50..=100).unwrap());
         let result = file_range(size(10), Some(range));
         assert!(result.is_err());
     }
