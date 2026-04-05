@@ -20,8 +20,13 @@ mod content_range {
 
     #[test]
     fn successful_bound() {
-        assert!(Bound::new(10..=20, Some(50)).is_ok());
-        assert!(Bound::new(10..=20, None).is_ok());
+        let sized = Bound::new(10..=20, Some(50)).unwrap();
+        assert_eq!(sized.size(), Some(50));
+        assert_eq!(sized.range().start(), 10);
+        assert_eq!(sized.range().end(), 20);
+
+        let unsized_ = Bound::new(10..=20, None).unwrap();
+        assert_eq!(unsized_.size(), None);
     }
 
     #[test]
@@ -191,6 +196,22 @@ mod content_range {
             let content_range = HttpContentRange::Bound(Bound::new(10..=19, Some(20)).unwrap());
 
             assert!(!content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn range_start_mismatch_does_not_match() {
+            let range = HttpRange::Range(OrderedRange::new(5..=20).unwrap());
+            let content_range = HttpContentRange::Bound(Bound::new(10..=20, Some(50)).unwrap());
+
+            assert!(!content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn suffix_with_nonzero_start_matches() {
+            let range = HttpRange::Suffix(5);
+            let content_range = HttpContentRange::Bound(Bound::new(15..=19, Some(20)).unwrap());
+
+            assert!(content_range.matches_requested_range(range));
         }
     }
 }
