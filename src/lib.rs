@@ -1,9 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-use std::{
-    num::{NonZero, NonZeroU64},
-    ops::RangeInclusive,
-};
+use std::ops::Range;
 
 use bytes::Bytes;
 
@@ -22,17 +19,14 @@ pub fn serve_file_with_http_range(
     http_range: Option<HttpRange>,
 ) -> Result<BodyRange<Bytes>, UnsatisfiableRange> {
     let size = u64::try_from(body.len()).expect("we do not support 128bit usize");
-    let size = NonZeroU64::try_from(size).map_err(|_| {
-        UnsatisfiableRange(HttpContentRange::Unsatisfiable(Unsatisfiable::new(size)))
-    })?;
 
     let content_range = file_range(size, http_range)?;
 
-    let start = usize::try_from(*content_range.range.start()).expect("u64 doesn't fit usize");
-    let end = usize::try_from(*content_range.range.end()).expect("u64 doesn't fit usize");
+    let start = usize::try_from(content_range.range.start).expect("u64 doesn't fit usize");
+    let end = usize::try_from(content_range.range.end).expect("u64 doesn't fit usize");
 
     Ok(BodyRange {
-        body: body.slice(start..=end),
+        body: body.slice(start..end),
         header: content_range.header,
     })
 }
@@ -41,31 +35,30 @@ pub fn serve_file_with_http_range(
 ///
 /// [`HttpRange`]: crate::headers::range::HttpRange
 pub fn file_range(
-    size: NonZero<u64>,
+    size: u64,
     http_range: Option<HttpRange>,
 ) -> Result<ContentRange, UnsatisfiableRange> {
-    let size = size.get();
-
     let Some(http_range) = http_range else {
         return Ok(ContentRange {
             header: None,
-            range: 0..=size - 1,
+            range: 0..size,
         });
     };
 
     let range = match http_range {
-        HttpRange::StartingPoint(start) if start < size => start..=size - 1,
+        HttpRange::StartingPoint(start) if start < size => start..size,
         HttpRange::Range(range) if range.start() < size => {
-            range.start()..=range.end().min(size - 1)
+            range.start()..range.end().saturating_add(1).min(size)
         }
-        HttpRange::Suffix(suffix) if suffix > 0 => size.saturating_sub(suffix)..=size - 1,
+        HttpRange::Suffix(suffix) if suffix > 0 && size > 0 => size.saturating_sub(suffix)..size,
         _ => {
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(size));
             return Err(UnsatisfiableRange(content_range));
         }
     };
 
-    let content_range = HttpContentRange::Bound(Bound::new(range.clone(), Some(size)).unwrap());
+    let content_range =
+        HttpContentRange::Bound(Bound::new(range.start..=range.end - 1, Some(size)).unwrap());
 
     Ok(ContentRange {
         header: Some(content_range),
@@ -107,7 +100,7 @@ impl<T> BodyRange<T> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContentRange {
     header: Option<HttpContentRange>,
-    range: RangeInclusive<u64>,
+    range: Range<u64>,
 }
 
 impl ContentRange {
@@ -117,8 +110,8 @@ impl ContentRange {
         self.header
     }
 
-    /// Returns a [`RangeInclusive`] of `u64` useful to manually slice the response body.
-    pub fn range(&self) -> &RangeInclusive<u64> {
+    /// Returns a [`Range`] of `u64` useful to manually slice the response body.
+    pub fn range(&self) -> &Range<u64> {
         &self.range
     }
 }

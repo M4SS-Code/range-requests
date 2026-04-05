@@ -400,8 +400,6 @@ mod content_range_parsing_errors {
 
 #[cfg(test)]
 mod file_range {
-    use std::num::NonZeroU64;
-
     use crate::{
         file_range,
         headers::{
@@ -411,146 +409,175 @@ mod file_range {
         },
     };
 
-    fn size(n: u64) -> NonZeroU64 {
-        NonZeroU64::new(n).unwrap()
-    }
-
     #[test]
     fn no_range_returns_full_file() {
-        let result = file_range(size(10), None).unwrap();
+        let result = file_range(10, None).unwrap();
         assert!(result.header().is_none());
-        assert_eq!(result.range(), &(0..=9));
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn starting_point_zero() {
-        let result = file_range(size(10), Some(HttpRange::StartingPoint(0))).unwrap();
+        let result = file_range(10, Some(HttpRange::StartingPoint(0))).unwrap();
         assert!(result.header().is_some());
-        assert_eq!(result.range(), &(0..=9));
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn starting_point_middle() {
-        let result = file_range(size(10), Some(HttpRange::StartingPoint(5))).unwrap();
-        assert_eq!(result.range(), &(5..=9));
+        let result = file_range(10, Some(HttpRange::StartingPoint(5))).unwrap();
+        assert_eq!(result.range(), &(5..10));
     }
 
     #[test]
     fn starting_point_last_byte() {
-        let result = file_range(size(10), Some(HttpRange::StartingPoint(9))).unwrap();
-        assert_eq!(result.range(), &(9..=9));
+        let result = file_range(10, Some(HttpRange::StartingPoint(9))).unwrap();
+        assert_eq!(result.range(), &(9..10));
     }
 
     #[test]
     fn starting_point_at_size() {
-        let result = file_range(size(10), Some(HttpRange::StartingPoint(10)));
+        let result = file_range(10, Some(HttpRange::StartingPoint(10)));
         assert!(result.is_err());
     }
 
     #[test]
     fn starting_point_beyond_size() {
-        let result = file_range(size(10), Some(HttpRange::StartingPoint(20)));
+        let result = file_range(10, Some(HttpRange::StartingPoint(20)));
         assert!(result.is_err());
     }
 
     #[test]
     fn range_single_byte() {
         let range = HttpRange::Range(OrderedRange::new(0..=0).unwrap());
-        let result = file_range(size(10), Some(range)).unwrap();
-        assert_eq!(result.range(), &(0..=0));
+        let result = file_range(10, Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..1));
     }
 
     #[test]
     fn range_full_file() {
         let range = HttpRange::Range(OrderedRange::new(0..=9).unwrap());
-        let result = file_range(size(10), Some(range)).unwrap();
-        assert_eq!(result.range(), &(0..=9));
+        let result = file_range(10, Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn range_end_at_size_is_clamped() {
         let range = HttpRange::Range(OrderedRange::new(0..=10).unwrap());
-        let result = file_range(size(10), Some(range)).unwrap();
-        assert_eq!(result.range(), &(0..=9));
+        let result = file_range(10, Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn range_beyond_size_is_clamped() {
         let range = HttpRange::Range(OrderedRange::new(0..=50).unwrap());
-        let result = file_range(size(10), Some(range)).unwrap();
-        assert_eq!(result.range(), &(0..=9));
+        let result = file_range(10, Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..10));
+    }
+
+    #[test]
+    fn range_end_at_u64_max_is_clamped() {
+        let range = HttpRange::Range(OrderedRange::new(0..=u64::MAX).unwrap());
+        let result = file_range(10, Some(range)).unwrap();
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn range_start_at_size_is_unsatisfiable() {
         let range = HttpRange::Range(OrderedRange::new(10..=20).unwrap());
-        let result = file_range(size(10), Some(range));
+        let result = file_range(10, Some(range));
         assert!(result.is_err());
     }
 
     #[test]
     fn range_start_beyond_size_is_unsatisfiable() {
         let range = HttpRange::Range(OrderedRange::new(50..=100).unwrap());
-        let result = file_range(size(10), Some(range));
+        let result = file_range(10, Some(range));
         assert!(result.is_err());
     }
 
     #[test]
     fn suffix_entire_file() {
-        let result = file_range(size(10), Some(HttpRange::Suffix(10))).unwrap();
-        assert_eq!(result.range(), &(0..=9));
+        let result = file_range(10, Some(HttpRange::Suffix(10))).unwrap();
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn suffix_last_byte() {
-        let result = file_range(size(10), Some(HttpRange::Suffix(1))).unwrap();
-        assert_eq!(result.range(), &(9..=9));
+        let result = file_range(10, Some(HttpRange::Suffix(1))).unwrap();
+        assert_eq!(result.range(), &(9..10));
     }
 
     #[test]
     fn suffix_middle() {
-        let result = file_range(size(10), Some(HttpRange::Suffix(5))).unwrap();
-        assert_eq!(result.range(), &(5..=9));
+        let result = file_range(10, Some(HttpRange::Suffix(5))).unwrap();
+        assert_eq!(result.range(), &(5..10));
     }
 
     #[test]
     fn suffix_zero_is_unsatisfiable() {
-        let result = file_range(size(10), Some(HttpRange::Suffix(0)));
+        let result = file_range(10, Some(HttpRange::Suffix(0)));
         assert!(result.is_err());
     }
 
     #[test]
     fn suffix_exceeds_size_is_clamped() {
-        let result = file_range(size(10), Some(HttpRange::Suffix(11))).unwrap();
-        assert_eq!(result.range(), &(0..=9));
+        let result = file_range(10, Some(HttpRange::Suffix(11))).unwrap();
+        assert_eq!(result.range(), &(0..10));
     }
 
     #[test]
     fn size_one_no_range() {
-        let result = file_range(size(1), None).unwrap();
-        assert_eq!(result.range(), &(0..=0));
+        let result = file_range(1, None).unwrap();
+        assert_eq!(result.range(), &(0..1));
     }
 
     #[test]
     fn size_one_starting_point_zero() {
-        let result = file_range(size(1), Some(HttpRange::StartingPoint(0))).unwrap();
-        assert_eq!(result.range(), &(0..=0));
+        let result = file_range(1, Some(HttpRange::StartingPoint(0))).unwrap();
+        assert_eq!(result.range(), &(0..1));
     }
 
     #[test]
     fn size_one_suffix_one() {
-        let result = file_range(size(1), Some(HttpRange::Suffix(1))).unwrap();
-        assert_eq!(result.range(), &(0..=0));
+        let result = file_range(1, Some(HttpRange::Suffix(1))).unwrap();
+        assert_eq!(result.range(), &(0..1));
     }
 
     #[test]
     fn content_range_header_present_for_range_request() {
-        let result = file_range(size(10), Some(HttpRange::StartingPoint(0))).unwrap();
+        let result = file_range(10, Some(HttpRange::StartingPoint(0))).unwrap();
         let header = result.header().unwrap();
         assert_eq!(
             header,
             HttpContentRange::Bound(Bound::new(0..=9, Some(10)).unwrap())
         );
+    }
+
+    #[test]
+    fn size_zero_no_range() {
+        let result = file_range(0, None).unwrap();
+        assert!(result.header().is_none());
+        assert_eq!(result.range(), &(0..0));
+    }
+
+    #[test]
+    fn size_zero_starting_point_is_unsatisfiable() {
+        let result = file_range(0, Some(HttpRange::StartingPoint(0)));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn size_zero_range_is_unsatisfiable() {
+        let range = HttpRange::Range(OrderedRange::new(0..=0).unwrap());
+        let result = file_range(0, Some(range));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn size_zero_suffix_is_unsatisfiable() {
+        let result = file_range(0, Some(HttpRange::Suffix(1)));
+        assert!(result.is_err());
     }
 }
 
@@ -586,10 +613,11 @@ mod serve_file {
     }
 
     #[test]
-    fn empty_body_is_unsatisfiable() {
+    fn empty_body_returns_empty_response() {
         let body = Bytes::new();
-        let result = serve_file_with_http_range(body, None);
-        assert!(result.is_err());
+        let result = serve_file_with_http_range(body, None).unwrap();
+        assert!(result.body().is_empty());
+        assert!(result.header().is_none());
     }
 
     #[test]
