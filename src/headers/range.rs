@@ -1,3 +1,5 @@
+#[cfg(feature = "axum")]
+use std::convert::Infallible;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -84,19 +86,26 @@ impl<S> axum_core::extract::OptionalFromRequestParts<S> for HttpRange
 where
     S: Send + Sync,
 {
-    type Rejection = ParseHttpRangeOrContentRangeError;
+    type Rejection = Infallible;
 
+    /// Extracts an optional [`HttpRange`] from the request's `Range` header.
+    ///
+    /// Per [RFC 9110 Section 14.2], a server that receives a `Range` header it
+    /// cannot parse or does not support (unknown range unit, multiple ranges,
+    /// malformed values) **must** ignore the header and serve the full
+    /// representation. This extractor returns `Ok(None)` in all such cases
+    /// instead of rejecting the request.
+    ///
+    /// [RFC 9110 Section 14.2]: https://www.rfc-editor.org/rfc/rfc9110#section-14.2
     async fn from_request_parts(
         parts: &mut http::request::Parts,
         _state: &S,
     ) -> Result<Option<Self>, Self::Rejection> {
-        match parts.headers.get(http::header::RANGE) {
-            Some(range) => {
-                let range = HttpRange::try_from(range)?;
-                Ok(Some(range))
-            }
-            None => Ok(None),
-        }
+        let range = parts
+            .headers
+            .get(http::header::RANGE)
+            .and_then(|range| HttpRange::try_from(range).ok());
+        Ok(range)
     }
 }
 
