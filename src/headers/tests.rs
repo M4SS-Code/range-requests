@@ -599,3 +599,137 @@ mod serve_file {
         assert!(result.is_err());
     }
 }
+
+#[cfg(test)]
+mod if_range {
+    use http::HeaderValue;
+
+    use crate::headers::{if_range::IfRange, range::HttpRange};
+
+    #[test]
+    fn parse_date() {
+        let ir: IfRange = "Sun, 05 Apr 2026 04:49:21 GMT".parse().unwrap();
+        assert!(matches!(ir, IfRange::Date(_)));
+    }
+
+    #[test]
+    fn parse_strong_etag() {
+        let ir: IfRange = "\"abc123\"".parse().unwrap();
+        assert!(matches!(ir, IfRange::ETag(_)));
+    }
+
+    #[test]
+    fn parse_weak_etag() {
+        let ir: IfRange = "W/\"abc123\"".parse().unwrap();
+        assert!(matches!(ir, IfRange::ETag(_)));
+    }
+
+    #[test]
+    fn empty_rejected() {
+        assert!("".parse::<IfRange>().is_err());
+    }
+
+    #[test]
+    fn whitespace_only_rejected() {
+        assert!("   ".parse::<IfRange>().is_err());
+    }
+
+    #[test]
+    fn date_matches_last_modified() {
+        let ir: IfRange = "Sun, 05 Apr 2026 04:49:21 GMT".parse().unwrap();
+        let lm = HeaderValue::from_static("Sun, 05 Apr 2026 04:49:21 GMT");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, Some(&lm), None), Some(range));
+    }
+
+    #[test]
+    fn date_does_not_match_different_last_modified() {
+        let ir: IfRange = "Mon, 01 Jan 2024 00:00:00 GMT".parse().unwrap();
+        let lm = HeaderValue::from_static("Sun, 05 Apr 2026 04:49:21 GMT");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, Some(&lm), None), None);
+    }
+
+    #[test]
+    fn date_does_not_match_missing_last_modified() {
+        let ir: IfRange = "Sun, 05 Apr 2026 04:49:21 GMT".parse().unwrap();
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, None), None);
+    }
+
+    #[test]
+    fn strong_etag_matches() {
+        let ir: IfRange = "\"abc123\"".parse().unwrap();
+        let etag = HeaderValue::from_static("\"abc123\"");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, Some(&etag)), Some(range));
+    }
+
+    #[test]
+    fn strong_etag_does_not_match_different() {
+        let ir: IfRange = "\"abc123\"".parse().unwrap();
+        let etag = HeaderValue::from_static("\"xyz789\"");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, Some(&etag)), None);
+    }
+
+    #[test]
+    fn strong_etag_does_not_match_missing() {
+        let ir: IfRange = "\"abc123\"".parse().unwrap();
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, None), None);
+    }
+
+    #[test]
+    fn weak_etag_never_matches_in_strong_comparison() {
+        let ir: IfRange = "W/\"abc123\"".parse().unwrap();
+        let etag = HeaderValue::from_static("W/\"abc123\"");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, Some(&etag)), None);
+    }
+
+    #[test]
+    fn weak_if_range_does_not_match_strong_etag() {
+        let ir: IfRange = "W/\"abc123\"".parse().unwrap();
+        let etag = HeaderValue::from_static("\"abc123\"");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, Some(&etag)), None);
+    }
+
+    #[test]
+    fn strong_if_range_does_not_match_weak_etag() {
+        let ir: IfRange = "\"abc123\"".parse().unwrap();
+        let etag = HeaderValue::from_static("W/\"abc123\"");
+        let range = HttpRange::StartingPoint(0);
+
+        assert_eq!(ir.evaluate(range, None, Some(&etag)), None);
+    }
+
+    #[test]
+    fn date_ignores_etag() {
+        let ir: IfRange = "Sun, 05 Apr 2026 04:49:21 GMT".parse().unwrap();
+        let etag = HeaderValue::from_static("\"abc123\"");
+        let range = HttpRange::StartingPoint(0);
+
+        // Date-based If-Range only checks Last-Modified, not ETag
+        assert_eq!(ir.evaluate(range, None, Some(&etag)), None);
+    }
+
+    #[test]
+    fn etag_ignores_last_modified() {
+        let ir: IfRange = "\"abc123\"".parse().unwrap();
+        let lm = HeaderValue::from_static("Sun, 05 Apr 2026 04:49:21 GMT");
+        let range = HttpRange::StartingPoint(0);
+
+        // ETag-based If-Range only checks ETag, not Last-Modified
+        assert_eq!(ir.evaluate(range, Some(&lm), None), None);
+    }
+}

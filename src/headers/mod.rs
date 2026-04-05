@@ -5,6 +5,7 @@ use std::{
 };
 
 pub mod content_range;
+pub mod if_range;
 pub mod range;
 #[cfg(test)]
 mod tests;
