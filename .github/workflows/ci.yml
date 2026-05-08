@@ -40,7 +40,7 @@ jobs:
           components: clippy
 
       - name: Run clippy
-        run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --locked --all-features -- -D warnings
 
   cargo-hack:
     name: cargo-hack / 1.95.0
@@ -81,7 +81,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
 
       - name: Run tests
-        run: cargo test
+        run: cargo test --locked
 
       - name: Run tests (--features axum)
-        run: cargo test --features axum
+        run: cargo test --locked --features axum
