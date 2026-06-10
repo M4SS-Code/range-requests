@@ -119,8 +119,16 @@ mod content_range {
         }
 
         #[test]
-        fn unsuccessful_range_range_range_content_bound() {
+        fn satisfiable_range_does_not_match_unsatisfiable() {
             let range = HttpRange::Range(OrderedRange::new(10..=50).unwrap());
+            let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
+
+            assert!(!content_range.matches_requested_range(range));
+        }
+
+        #[test]
+        fn range_start_beyond_size_matches_unsatisfiable() {
+            let range = HttpRange::Range(OrderedRange::new(20..=50).unwrap());
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(20));
 
             assert!(content_range.matches_requested_range(range));

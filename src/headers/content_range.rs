@@ -37,12 +37,16 @@ impl HttpContentRange {
                 let ends_at_boundary = size.is_none_or(|size| range.end() + 1 == size);
                 length_matches && ends_at_boundary
             }
+            // Per RFC 9110 Section 14.1.2 an int-range is satisfiable iff its
+            // first-pos is less than the representation length, so a 416 is
+            // only consistent with the request when the start is at or past
+            // the claimed size.
             (
                 HttpRange::StartingPoint(n),
                 HttpContentRange::Unsatisfiable(Unsatisfiable { size }),
             )
             | (
-                HttpRange::Range(OrderedRange { end: n, .. }),
+                HttpRange::Range(OrderedRange { start: n, .. }),
                 HttpContentRange::Unsatisfiable(Unsatisfiable { size }),
             ) => n >= *size,
             (HttpRange::Suffix(suffix), HttpContentRange::Unsatisfiable(Unsatisfiable { .. })) => {
