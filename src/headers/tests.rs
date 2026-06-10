@@ -604,8 +604,15 @@ mod file_range {
     }
 
     #[test]
-    fn size_zero_suffix_is_unsatisfiable() {
-        let result = file_range(0, Some(HttpRange::Suffix(1)));
+    fn size_zero_suffix_serves_full_response() {
+        let result = file_range(0, Some(HttpRange::Suffix(1))).unwrap();
+        assert!(result.header().is_none());
+        assert_eq!(result.range(), &(0..0));
+    }
+
+    #[test]
+    fn size_zero_suffix_zero_is_unsatisfiable() {
+        let result = file_range(0, Some(HttpRange::Suffix(0)));
         assert!(result.is_err());
     }
 }
@@ -654,6 +661,14 @@ mod serve_file {
         let body = Bytes::from_static(b"hello");
         let result = serve_file_with_http_range(body, Some(HttpRange::Suffix(0)));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn empty_body_with_suffix_returns_empty_response() {
+        let body = Bytes::new();
+        let result = serve_file_with_http_range(body, Some(HttpRange::Suffix(5))).unwrap();
+        assert!(result.body().is_empty());
+        assert!(result.header().is_none());
     }
 }
 

@@ -51,6 +51,17 @@ pub fn file_range(
             range.start()..range.end().saturating_add(1).min(size)
         }
         HttpRange::Suffix(suffix) if suffix > 0 && size > 0 => size.saturating_sub(suffix)..size,
+        // A non-zero suffix-range is satisfiable even when the representation
+        // is empty (RFC 9110 Section 14.1.2), but the `Content-Range` of a
+        // 206 cannot be expressed for an empty body. Ignore the range and
+        // serve the full (empty) representation instead, as permitted by
+        // RFC 9110 Section 14.2.
+        HttpRange::Suffix(suffix) if suffix > 0 => {
+            return Ok(ContentRange {
+                header: None,
+                range: 0..size,
+            });
+        }
         _ => {
             let content_range = HttpContentRange::Unsatisfiable(Unsatisfiable::new(size));
             return Err(UnsatisfiableRange(content_range));
@@ -88,7 +99,9 @@ impl<T> BodyRange<T> {
     }
 
     /// Returns an option of [`HttpContentRange`].
-    /// If it's None the provided [`HttpRange`] was None too.
+    /// It is `None` if no range was applied to the body: either no
+    /// [`HttpRange`] was provided, or the range was ignored because the
+    /// representation is empty.
     pub fn header(&self) -> Option<HttpContentRange> {
         self.header
     }
@@ -105,7 +118,9 @@ pub struct ContentRange {
 
 impl ContentRange {
     /// Returns an option of [`HttpContentRange`].
-    /// If it's None the provided [`HttpRange`] was None too.
+    /// It is `None` if no range was applied to the body: either no
+    /// [`HttpRange`] was provided, or the range was ignored because the
+    /// representation is empty.
     pub fn header(&self) -> Option<HttpContentRange> {
         self.header
     }
