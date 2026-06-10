@@ -692,6 +692,59 @@ mod serve_file {
     }
 }
 
+#[cfg(feature = "axum")]
+mod axum_range_extractor {
+    use std::{
+        pin::pin,
+        task::{Context, Poll, Waker},
+    };
+
+    use axum_core::extract::OptionalFromRequestParts;
+    use http::{Method, Request, header::RANGE};
+
+    use crate::headers::{OrderedRange, range::HttpRange};
+
+    fn extract(method: Method, range: Option<&str>) -> Option<HttpRange> {
+        let mut builder = Request::builder().method(method);
+        if let Some(range) = range {
+            builder = builder.header(RANGE, range);
+        }
+        let (mut parts, ()) = builder.body(()).unwrap().into_parts();
+
+        let fut =
+            pin!(<HttpRange as OptionalFromRequestParts<()>>::from_request_parts(&mut parts, &()));
+        match fut.poll(&mut Context::from_waker(Waker::noop())) {
+            Poll::Ready(Ok(range)) => range,
+            Poll::Ready(Err(infallible)) => match infallible {},
+            Poll::Pending => unreachable!("the extractor never awaits"),
+        }
+    }
+
+    #[test]
+    fn get_request_extracts_range() {
+        assert_eq!(
+            extract(Method::GET, Some("bytes=0-10")),
+            Some(HttpRange::Range(OrderedRange::new(0..=10).unwrap()))
+        );
+    }
+
+    #[test]
+    fn non_get_request_ignores_range() {
+        assert_eq!(extract(Method::POST, Some("bytes=0-10")), None);
+        assert_eq!(extract(Method::PUT, Some("bytes=0-10")), None);
+    }
+
+    #[test]
+    fn missing_range_extracts_none() {
+        assert_eq!(extract(Method::GET, None), None);
+    }
+
+    #[test]
+    fn malformed_range_is_ignored() {
+        assert_eq!(extract(Method::GET, Some("bytes=10-0")), None);
+    }
+}
+
 #[cfg(test)]
 mod if_range {
     use http::HeaderValue;
