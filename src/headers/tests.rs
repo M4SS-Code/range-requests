@@ -88,6 +88,14 @@ mod content_range {
     }
 
     #[test]
+    fn unit_is_case_insensitive() {
+        assert_eq!(
+            "BYTES 10-20/50".parse::<HttpContentRange>().unwrap(),
+            HttpContentRange::Bound(Bound::new(10..=20, Some(50)).unwrap())
+        );
+    }
+
+    #[test]
     fn successful_unsatisfiable_parsing() {
         assert_eq!(
             "bytes */50".parse::<HttpContentRange>().unwrap(),
@@ -299,6 +307,18 @@ mod range {
         assert_eq!(
             "items=0-10".parse::<HttpRange>().unwrap_err(),
             ParseHttpRangeOrContentRangeError::InvalidUnit
+        );
+    }
+
+    #[test]
+    fn unit_is_case_insensitive() {
+        assert_eq!(
+            "BYTES=50-".parse::<HttpRange>().unwrap(),
+            HttpRange::StartingPoint(50)
+        );
+        assert_eq!(
+            "Bytes=50-100".parse::<HttpRange>().unwrap(),
+            HttpRange::Range(OrderedRange::new(50..=100).unwrap())
         );
     }
 

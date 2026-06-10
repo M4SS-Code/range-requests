@@ -29,7 +29,8 @@ impl FromStr for HttpRange {
         let (unit_str, range_str) = s
             .split_once("=")
             .ok_or(ParseHttpRangeOrContentRangeError::Malformed)?;
-        if unit_str != UNIT {
+        // Range unit names are case-insensitive (RFC 9110 Section 14.1).
+        if !unit_str.eq_ignore_ascii_case(UNIT) {
             return Err(ParseHttpRangeOrContentRangeError::InvalidUnit);
         }
 
