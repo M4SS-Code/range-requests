@@ -122,7 +122,7 @@ pub struct Bound {
 }
 
 impl Bound {
-    // Creates a new [`Bound`].
+    /// Creates a new [`Bound`].
     pub fn new(range: RangeInclusive<u64>, size: Option<u64>) -> Result<Self, InvalidBound> {
         let range = OrderedRange::new(range)?;
 
@@ -135,25 +135,25 @@ impl Bound {
         Ok(Self { range, size })
     }
 
-    // Returns a copy of the [`Bound`] range.
+    /// Returns a copy of the [`Bound`] range.
     pub fn range(&self) -> OrderedRange {
         self.range
     }
 
-    // Returns the size of the [`Bound`], if present.
+    /// Returns the size of the [`Bound`], if present.
     pub fn size(&self) -> Option<u64> {
         self.size
     }
 }
 
-// An unsatisfiable `Content-Range`.
+/// An unsatisfiable `Content-Range`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Unsatisfiable {
     size: u64,
 }
 
 impl Unsatisfiable {
-    // Creates a new [`Unsatisfiable`].
+    /// Creates a new [`Unsatisfiable`].
     pub fn new(size: u64) -> Self {
         Self { size }
     }
